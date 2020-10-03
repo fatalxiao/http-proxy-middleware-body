@@ -6,35 +6,17 @@ const zlib = require('zlib'),
 
 function getBody(res, proxyRes, callback) {
 
-    let contentEncoding = proxyRes;
-    if (proxyRes && proxyRes.headers) {
-        contentEncoding = proxyRes.headers['content-encoding'];
-        if ('content-length' in proxyRes.headers) {
-            delete proxyRes.headers['content-length'];
-        }
+    if (proxyRes && proxyRes.headers && ('content-length' in proxyRes.headers)) {
+        delete proxyRes.headers['content-length'];
     }
 
-    let unzip, zip;
-    switch (contentEncoding) {
-        case 'gzip':
-            unzip = zlib.Gunzip();
-            zip = zlib.Gzip();
-            break;
-        case 'deflate':
-            unzip = zlib.Inflate();
-            zip = zlib.Deflate();
-            break;
-        case 'br':
-            unzip = zlib.BrotliDecompress && zlib.BrotliDecompress();
-            zip = zlib.BrotliCompress && zlib.BrotliCompress();
-            break;
-    }
-
-    let write = res.write;
-    let end = res.end;
+    const contentEncoding = getContentEncoding(proxyRes),
+        [unzip, zip] = getZip(contentEncoding),
+        write = res.write,
+        end = res.end;
 
     if (unzip) {
-        unzip.on('error', function (e) {
+        unzip.on('error', e => {
             console.log('Unzip error: ', e);
             end.call(res);
         });
@@ -47,31 +29,51 @@ function getBody(res, proxyRes, callback) {
 
 };
 
+function getContentEncoding(proxyRes) {
+
+    if (proxyRes && proxyRes.headers) {
+        return proxyRes.headers['content-encoding'];
+    }
+
+    return proxyRes;
+
+}
+
+function getZip(contentEncoding) {
+
+    switch (contentEncoding) {
+        case 'gzip':
+            return [zlib.Gunzip(), zlib.Gzip()];
+        case 'deflate':
+            return [zlib.Inflate(), zlib.Deflate()];
+        case 'br':
+            return [zlib.BrotliDecompress && zlib.BrotliDecompress(), zlib.BrotliCompress && zlib.BrotliCompress()];
+    }
+
+    return [];
+
+}
+
 function handleCompressed(res, write, end, unzip, zip, callback) {
 
     res.write = data => unzip.write(data);
     res.end = () => unzip.end();
 
-    // Concat the unzip stream.
-    let concatWrite = concatStream(data => {
+    unzip.pipe(concatStream(data => {
 
         const body = data.toString();
 
-        // Custom modified logic
         if (typeof callback === 'function') {
             callback(body);
         }
 
-        // Call the response method and recover the content-encoding.
         zip.on('data', chunk => write.call(res, chunk));
         zip.on('end', () => end.call(res));
 
         zip.write(new Buffer(data));
         zip.end();
 
-    });
-
-    unzip.pipe(concatWrite);
+    }));
 
 }
 
@@ -92,6 +94,7 @@ function handleUncompressed(res, write, end, callback) {
         end.call(res);
 
     };
+
 }
 
 module.exports = getBody;
