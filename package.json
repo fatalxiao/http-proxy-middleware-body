@@ -1,0 +1,26 @@
+{
+    "name": "http-proxy-middleware-body",
+    "author": "falalxiao",
+    "version": "0.0.1",
+    "description": "Get response body from http-proxy-middleware",
+    "main": "index.js",
+    "scripts": {
+        "do-publish": "npm publish"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/fatalxiao/http-proxy-middleware-body"
+    },
+    "keywords": [
+        "http-proxy-middleware"
+    ],
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/fatalxiao/http-proxy-middleware-body/issues"
+    },
+    "homepage": "https://fatalxiao.github.io/http-proxy-middleware-body",
+    "dependencies": {
+        "bufferhelper": "0.2.1",
+        "concat-stream": "1.5.1"
+    }
+}
