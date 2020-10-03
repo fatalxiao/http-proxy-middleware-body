@@ -1,2 +1,5 @@
+# Idea project files
+.idea
+
 # eslint
 .eslintrc.js
