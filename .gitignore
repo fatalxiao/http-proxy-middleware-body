@@ -1,0 +1,19 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Idea project files
+.idea
+
+# Windows thumbnail cache
+Thumbs.db
+
+# Dependency directories
+node_modules
+
+# npm lock json
+package-lock.json
+
+# Distribution
+/dist
