@@ -6,9 +6,9 @@ const zlib = require('zlib'),
 
 function getBody(res, proxyRes, callback) {
 
-    if (proxyRes && proxyRes.headers && ('content-length' in proxyRes.headers)) {
-        delete proxyRes.headers['content-length'];
-    }
+    // if (proxyRes && proxyRes.headers && ('content-length' in proxyRes.headers)) {
+    //     delete proxyRes.headers['content-length'];
+    // }
 
     const contentEncoding = getContentEncoding(proxyRes),
         unzip = getZip(contentEncoding),
@@ -43,11 +43,11 @@ function getZip(contentEncoding) {
 
     switch (contentEncoding) {
         case 'gzip':
-            return zlib.Gunzip();
+            return new zlib.Gunzip();
         case 'deflate':
-            return zlib.Inflate();
+            return new zlib.Inflate();
         case 'br':
-            return zlib.BrotliDecompress && zlib.BrotliDecompress();
+            return zlib.BrotliDecompress && new zlib.BrotliDecompress();
     }
 
     return null;
@@ -56,10 +56,9 @@ function getZip(contentEncoding) {
 
 function handleCompressed(res, write, end, unzip, callback) {
 
-    let rawData = null;
-
+    const buffer = new BufferHelper();
     res.write = data => {
-        rawData = data;
+        buffer.concat(data);
         unzip.write(data);
     };
     res.end = () => unzip.end();
@@ -70,7 +69,7 @@ function handleCompressed(res, write, end, unzip, callback) {
             callback(data.toString());
         }
 
-        write.call(res, new Buffer(rawData));
+        write.call(res, buffer.toBuffer());
         end.call(res);
 
     }));
@@ -79,21 +78,18 @@ function handleCompressed(res, write, end, unzip, callback) {
 
 function handleUncompressed(res, write, end, callback) {
 
-    let rawData = null;
-
     const buffer = new BufferHelper();
-    res.write = data => {
-        rawData = data;
-        buffer.concat(data);
-    };
+    res.write = data => buffer.concat(data);
 
     res.end = () => {
 
+        const data = buffer.toBuffer();
+
         if (typeof callback === 'function') {
-            callback(buffer.toBuffer().toString());
+            callback(data.toString());
         }
 
-        write.call(res, rawData);
+        write.call(res, data);
         end.call(res);
 
     };
