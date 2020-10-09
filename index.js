@@ -11,7 +11,7 @@ function getBody(res, proxyRes, callback) {
     }
 
     const contentEncoding = getContentEncoding(proxyRes),
-        [unzip, zip] = getZip(contentEncoding),
+        unzip = getZip(contentEncoding),
         write = res.write,
         end = res.end;
 
@@ -20,9 +20,9 @@ function getBody(res, proxyRes, callback) {
             console.log('Unzip error: ', e);
             end.call(res);
         });
-        handleCompressed(res, write, end, unzip, zip, callback);
+        handleCompressed(res, write, end, unzip, callback);
     } else if (!contentEncoding) {
-        handleUncompressed(res, write, end, callback);
+        handleUncompressed(res, end, callback);
     } else {
         console.log('Not supported content-encoding: ' + contentEncoding);
     }
@@ -43,54 +43,50 @@ function getZip(contentEncoding) {
 
     switch (contentEncoding) {
         case 'gzip':
-            return [zlib.Gunzip(), zlib.Gzip()];
+            return zlib.Gunzip();
         case 'deflate':
-            return [zlib.Inflate(), zlib.Deflate()];
+            return zlib.Inflate();
         case 'br':
-            return [zlib.BrotliDecompress && zlib.BrotliDecompress(), zlib.BrotliCompress && zlib.BrotliCompress()];
+            return zlib.BrotliDecompress && zlib.BrotliDecompress();
     }
 
-    return [];
+    return null;
 
 }
 
-function handleCompressed(res, write, end, unzip, zip, callback) {
+function handleCompressed(res, write, end, unzip, callback) {
 
-    res.write = data => unzip.write(data);
+    let rawData = null;
+
+    res.write = data => {
+        rawData = data;
+        unzip.write(data);
+    };
     res.end = () => unzip.end();
 
     unzip.pipe(concatStream(data => {
 
-        const body = data.toString();
-
         if (typeof callback === 'function') {
-            callback(body);
+            callback(data.toString());
         }
 
-        zip.on('data', chunk => write.call(res, chunk));
-        zip.on('end', () => end.call(res));
-
-        zip.write(new Buffer(data));
-        zip.end();
+        write.call(res, new Buffer(rawData));
+        end.call(res);
 
     }));
 
 }
 
-function handleUncompressed(res, write, end, callback) {
+function handleUncompressed(res, end, callback) {
 
-    let buffer = new BufferHelper();
-    res.write = data => buffer.concat(data);
+    const buffer = new BufferHelper();
 
     res.end = () => {
 
-        const body = buffer.toBuffer().toString();
-
         if (typeof callback === 'function') {
-            callback(body);
+            callback(buffer.toBuffer().toString());
         }
 
-        write.call(res, new Buffer(body));
         end.call(res);
 
     };
