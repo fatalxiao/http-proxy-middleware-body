@@ -1,7 +1,7 @@
 {
     "name": "http-proxy-middleware-body",
     "author": "falalxiao",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "Get response body from http-proxy-middleware",
     "main": "index.js",
     "scripts": {
