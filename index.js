@@ -22,7 +22,7 @@ function getBody(res, proxyRes, callback) {
         });
         handleCompressed(res, write, end, unzip, callback);
     } else if (!contentEncoding) {
-        handleUncompressed(res, end, callback);
+        handleUncompressed(res, write, end, callback);
     } else {
         console.log('Not supported content-encoding: ' + contentEncoding);
     }
@@ -77,9 +77,15 @@ function handleCompressed(res, write, end, unzip, callback) {
 
 }
 
-function handleUncompressed(res, end, callback) {
+function handleUncompressed(res, write, end, callback) {
+
+    let rawData = null;
 
     const buffer = new BufferHelper();
+    res.write = data => {
+        rawData = data;
+        buffer.concat(data);
+    };
 
     res.end = () => {
 
@@ -87,6 +93,7 @@ function handleUncompressed(res, end, callback) {
             callback(buffer.toBuffer().toString());
         }
 
+        write.call(res, rawData);
         end.call(res);
 
     };
