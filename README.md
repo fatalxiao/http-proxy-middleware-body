@@ -1,19 +1,18 @@
 # http-proxy-middleware-body
 
+Get response body when using `http-proxy-middleware`.
+
 ## Example
 
 An example with `express` server.
 
 ```javascript
-
-// ...
-
 const express = require('express'),
     {createProxyMiddleware} = require('http-proxy-middleware'),
 
     app = express();
 
-app.use(createProxyMiddleware(SOME_CONTEXT, {
+app.use(createProxyMiddleware('SOME_CONTEXT', {
 
     // other configs...
 
@@ -29,7 +28,7 @@ app.use(createProxyMiddleware(SOME_CONTEXT, {
             const body = JSON.parse(rawBody);
 
             // token expired
-            if (body.code === TOKEN_EXPIRED_CODE) {
+            if (body.code === 'TOKEN_EXPIRED_CODE') {
                 // remove token...
             }
 
@@ -40,7 +39,4 @@ app.use(createProxyMiddleware(SOME_CONTEXT, {
     })
 
 }));
-
-// ...
-
 ```
