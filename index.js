@@ -4,6 +4,12 @@ const zlib = require('zlib'),
     concatStream = require('concat-stream'),
     BufferHelper = require('bufferhelper');
 
+/**
+ * get response body
+ * @param res
+ * @param proxyRes
+ * @param callback
+ */
 function getBody(res, proxyRes, callback) {
 
     // if (proxyRes && proxyRes.headers && ('content-length' in proxyRes.headers)) {
@@ -11,7 +17,7 @@ function getBody(res, proxyRes, callback) {
     // }
 
     const contentEncoding = getContentEncoding(proxyRes),
-        unzip = getZip(contentEncoding),
+        unzip = getUnzip(contentEncoding),
         write = res.write,
         end = res.end;
 
@@ -20,15 +26,20 @@ function getBody(res, proxyRes, callback) {
             console.log('Unzip error: ', e);
             end.call(res);
         });
-        handleCompressed(res, write, end, unzip, callback);
+        handleCompressedResponseBody(res, write, end, unzip, callback);
     } else if (!contentEncoding) {
-        handleUncompressed(res, write, end, callback);
+        handleUncompressedResponseBody(res, write, end, callback);
     } else {
         console.log('Not supported content-encoding: ' + contentEncoding);
     }
 
 };
 
+/**
+ * get content encoding in response header
+ * @param proxyRes
+ * @returns {*|string[]|string|*}
+ */
 function getContentEncoding(proxyRes) {
 
     if (proxyRes && proxyRes.headers) {
@@ -39,7 +50,12 @@ function getContentEncoding(proxyRes) {
 
 }
 
-function getZip(contentEncoding) {
+/**
+ * get unzip instance
+ * @param contentEncoding
+ * @returns {null|zlib.Gunzip|zlib.Inflate|*}
+ */
+function getUnzip(contentEncoding) {
 
     switch (contentEncoding) {
         case 'gzip':
@@ -54,41 +70,67 @@ function getZip(contentEncoding) {
 
 }
 
-function handleCompressed(res, write, end, unzip, callback) {
+/**
+ * handle compressed response body
+ * @param res
+ * @param write
+ * @param end
+ * @param unzip
+ * @param callback
+ */
+function handleCompressedResponseBody(res, write, end, unzip, callback) {
 
-    const buffer = new BufferHelper();
+    const originBody = new BufferHelper();
+
+    // rewrite response write to get origin body
+    // and prepare for unzip at the same time
     res.write = data => {
-        buffer.concat(data);
+        originBody.concat(data);
         unzip.write(data);
     };
+
+    // rewrite response end to end unzip
     res.end = () => unzip.end();
 
+    // after unzip
     unzip.pipe(concatStream(data => {
 
         if (typeof callback === 'function') {
             callback(data.toString());
         }
 
-        write.call(res, buffer.toBuffer());
+        // call the response write and end
+        write.call(res, originBody.toBuffer());
         end.call(res);
 
     }));
 
 }
 
-function handleUncompressed(res, write, end, callback) {
+/**
+ * handle uncompressed response body
+ * @param res
+ * @param write
+ * @param end
+ * @param callback
+ */
+function handleUncompressedResponseBody(res, write, end, callback) {
 
-    const buffer = new BufferHelper();
-    res.write = data => buffer.concat(data);
+    const originBody = new BufferHelper();
 
+    // rewrite response write to get origin body
+    res.write = data => originBody.concat(data);
+
+    // rewrite response end to run callback
     res.end = () => {
 
-        const data = buffer.toBuffer();
+        const data = originBody.toBuffer();
 
         if (typeof callback === 'function') {
             callback(data.toString());
         }
 
+        // call the response write and end
         write.call(res, data);
         end.call(res);
 
