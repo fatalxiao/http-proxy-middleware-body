@@ -1,8 +1,8 @@
 {
     "name": "http-proxy-middleware-body",
     "author": "falalxiao",
-    "version": "0.0.4",
-    "description": "Get response body from http-proxy-middleware",
+    "version": "0.0.5",
+    "description": "Get response body for http-proxy-middleware",
     "main": "index.js",
     "scripts": {
         "do-publish": "npm publish"
