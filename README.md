@@ -1,5 +1,9 @@
 # http-proxy-middleware-body
 
+## Example
+
+An example with `express` server.
+
 ```javascript
 
 // ...
