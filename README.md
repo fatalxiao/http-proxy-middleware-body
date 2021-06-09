@@ -16,6 +16,7 @@ An example with `express` server.
 ```javascript
 const express = require('express'),
     {createProxyMiddleware} = require('http-proxy-middleware'),
+    getBody = require('http-proxy-middleware-body'),
 
     app = express();
 
