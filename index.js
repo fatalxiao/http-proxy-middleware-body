@@ -16,10 +16,10 @@ function getBody(res, proxyRes, callback) {
     //     delete proxyRes.headers['content-length'];
     // }
 
-    const contentEncoding = getContentEncoding(proxyRes),
-        unzip = getUnzip(contentEncoding),
-        write = res.write,
-        end = res.end;
+    const contentEncoding = getContentEncoding(proxyRes);
+    const unzip = getUnzip(contentEncoding);
+    const write = res.write;
+    const end = res.end;
 
     if (unzip) {
         unzip.on('error', e => {
