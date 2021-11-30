@@ -1,8 +1,8 @@
 'use strict';
 
-const zlib = require('zlib'),
-    concatStream = require('concat-stream'),
-    BufferHelper = require('bufferhelper');
+const zlib = require('zlib');
+const concatStream = require('concat-stream');
+const BufferHelper = require('bufferhelper');
 
 /**
  * get response body
@@ -33,7 +33,7 @@ function getBody(res, proxyRes, callback) {
         console.log('Not supported content-encoding: ' + contentEncoding);
     }
 
-};
+}
 
 /**
  * get content encoding in response header
